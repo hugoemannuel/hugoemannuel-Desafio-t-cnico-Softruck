@@ -1,10 +1,11 @@
 import { StyleSheet, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import Data from "./data/frontend_data_gps.json";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function App() {
   const { courses, vehicle } = Data;
+  const mapRef = useRef(MapView);
 
   const [spritePositionIndex, setSpritePositionIndex] = useState(0);
 
@@ -22,6 +23,15 @@ export default function App() {
         latitude: nextCoordinates.latitude,
         longitude: nextCoordinates.longitude,
       });
+      mapRef?.current.animateToRegion(
+        {
+          latitude: nextCoordinates.latitude,
+          longitude: nextCoordinates.longitude,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.0121,
+        },
+        1500
+      );
     }
   };
 
@@ -30,12 +40,17 @@ export default function App() {
       handleUpdateCord();
     }, 1500);
 
+    if (spritePositionIndex === courses[0]?.gps.length - 1) {
+      clearInterval(interval);
+    }
+
     return () => clearInterval(interval);
-  }, [spritePosition]);
+  }, [spritePositionIndex]);
 
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
           latitude: spritePosition.latitude,
@@ -45,7 +60,7 @@ export default function App() {
         }}
       >
         <Marker
-          icon={{ uri: vehicle.picture.address}}
+          icon={{ uri: vehicle.picture.address }}
           coordinate={{
             latitude: spritePosition.latitude,
             longitude: spritePosition.longitude,
