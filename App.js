@@ -8,6 +8,7 @@ export default function App() {
   const mapRef = useRef(MapView);
   const [start, setStart] = useState(false);
   const [averageSpeed, setAverageSpeed] = useState(0);
+  const [realSpeed, setRealSpeed] = useState(0);
   const [spritePositionIndex, setSpritePositionIndex] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState({
     hours: 0,
@@ -43,6 +44,7 @@ export default function App() {
       estimatedTime: { hours: estimatedHours, minutes: estimatedMinutes },
     };
   };
+
   const handleUpdateCord = () => {
     const nextIndex = spritePositionIndex + 1;
     if (nextIndex < courses[0].gps.length) {
@@ -52,6 +54,9 @@ export default function App() {
         latitude: nextCoordinates.latitude,
         longitude: nextCoordinates.longitude,
       });
+
+      setRealSpeed(nextCoordinates.speed.toFixed(1));
+
       mapRef?.current.animateToRegion(
         {
           latitude: nextCoordinates.latitude,
@@ -102,7 +107,7 @@ export default function App() {
 
   useEffect(() => {
     const { averageSpeed, estimatedTime } = calculateAverageSpeed();
-    setAverageSpeed(averageSpeed.toFixed(2));
+    setAverageSpeed(averageSpeed.toFixed(1));
     setEstimatedTime(estimatedTime);
   }, [courses]);
 
@@ -127,13 +132,21 @@ export default function App() {
         />
       </MapView>
       <View style={styles.overlay}>
-        <Text style={styles.overlayText}>
-          Tempo Médio:
-          {` ${estimatedTime.hours} horas : ${estimatedTime.minutes} minutos`}
-        </Text>
-        <Text style={styles.overlayText}>
-          Velocidade Média do trajeto: {averageSpeed} km/h
-        </Text>
+        {start ? (
+          <View>
+            <Text style={styles.overlayText}>Velocidade: {realSpeed} km/h</Text>
+          </View>
+        ) : (
+          <View>
+            <Text style={styles.overlayText}>
+              Tempo Médio:
+              {` ${estimatedTime.hours} horas : ${estimatedTime.minutes} minutos`}
+            </Text>
+            <Text style={styles.overlayText}>
+              Velocidade Média do trajeto: {averageSpeed} km/h
+            </Text>
+          </View>
+        )}
         {spritePositionIndex === courses[0]?.gps.length - 1 ? (
           <TouchableOpacity style={styles.startButton} onPress={handleReset}>
             <Text style={styles.startButtonText}>Recomeçar</Text>
