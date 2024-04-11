@@ -6,14 +6,42 @@ import { useEffect, useRef, useState } from "react";
 export default function App() {
   const { courses, vehicle } = Data;
   const mapRef = useRef(MapView);
-
+  const [averageSpeed, setAverageSpeed] = useState(0);
   const [spritePositionIndex, setSpritePositionIndex] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState({
+    minutes: 0,
+    seconds: 0,
+  });
 
   const [spritePosition, setSpritePosition] = useState({
     latitude: courses[0].gps[0].latitude,
     longitude: courses[0].gps[0].longitude,
   });
 
+  const calculateAverageSpeed = () => {
+    let totalDistance = 0;
+    let totalTime = 0;
+
+    courses.forEach((course) => {
+      const gps = course.gps;
+      const courseDistance = course.distance;
+      const courseTime =
+        gps[gps.length - 1].acquisition_time_unix -
+        gps[0].acquisition_time_unix;
+
+      totalDistance += courseDistance;
+      totalTime += courseTime;
+    });
+
+    const averageSpeed = (totalDistance / totalTime) * 3.6;
+    const estimatedHours = Math.floor(totalTime / 3600);
+    const estimatedMinutes = Math.floor((totalTime % 3600) / 60);
+
+    return {
+      averageSpeed,
+      estimatedTime: { hours: estimatedHours, minutes: estimatedMinutes },
+    };
+  };
   const handleUpdateCord = () => {
     const nextIndex = spritePositionIndex + 1;
     if (nextIndex < courses[0].gps.length) {
@@ -35,6 +63,9 @@ export default function App() {
     }
   };
 
+  console.log("***averageSpeed", averageSpeed);
+  console.log("***estimatedTime", estimatedTime);
+
   useEffect(() => {
     const interval = setInterval(() => {
       handleUpdateCord();
@@ -46,6 +77,12 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [spritePositionIndex]);
+
+  useEffect(() => {
+    const { averageSpeed, estimatedTime } = calculateAverageSpeed();
+    setAverageSpeed(averageSpeed.toFixed(2));
+    setEstimatedTime(estimatedTime);
+  }, [courses]);
 
   return (
     <View style={styles.container}>
