@@ -1,7 +1,8 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import Data from "./data/frontend_data_gps.json";
-import { useEffect, useRef, useState } from "react";
+import RNPickerSelect from "react-native-picker-select";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function App() {
   const { courses, vehicle } = Data;
@@ -10,6 +11,7 @@ export default function App() {
   const [averageSpeed, setAverageSpeed] = useState(0);
   const [realSpeed, setRealSpeed] = useState(0);
   const [spritePositionIndex, setSpritePositionIndex] = useState(0);
+  const [selected, setSelected] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState({
     hours: 0,
     minutes: 0,
@@ -20,20 +22,18 @@ export default function App() {
     longitude: courses[0].gps[0].longitude,
   });
 
-  const calculateAverageSpeed = () => {
+  const calculateAverageSpeed = (selectedCourse) => {
     let totalDistance = 0;
     let totalTime = 0;
 
-    courses.forEach((course) => {
-      const gps = course.gps;
-      const courseDistance = course.distance;
-      const courseTime =
-        gps[gps.length - 1].acquisition_time_unix -
-        gps[0].acquisition_time_unix;
+    const course = courses[selectedCourse];
+    const gps = course.gps;
+    const courseDistance = course.distance;
+    const courseTime =
+      gps[gps.length - 1].acquisition_time_unix - gps[0].acquisition_time_unix;
 
-      totalDistance += courseDistance;
-      totalTime += courseTime;
-    });
+    totalDistance += courseDistance;
+    totalTime += courseTime;
 
     const averageSpeed = (totalDistance / totalTime) * 3.6;
     const estimatedHours = Math.floor(totalTime / 3600);
@@ -47,8 +47,8 @@ export default function App() {
 
   const handleUpdateCord = () => {
     const nextIndex = spritePositionIndex + 1;
-    if (nextIndex < courses[0].gps.length) {
-      const nextCoordinates = courses[0].gps[nextIndex];
+    if (nextIndex < courses[selected].gps.length) {
+      const nextCoordinates = courses[selected].gps[nextIndex];
       setSpritePositionIndex(nextIndex);
       setSpritePosition({
         latitude: nextCoordinates.latitude,
@@ -72,23 +72,40 @@ export default function App() {
   const handleReset = () => {
     mapRef?.current.animateToRegion(
       {
-        latitude: courses[0].gps[0].latitude,
-        longitude: courses[0].gps[0].longitude,
+        latitude: courses[selected].gps[0].latitude,
+        longitude: courses[selected].gps[0].longitude,
         latitudeDelta: 0.015,
         longitudeDelta: 0.0121,
       },
       1500
     );
+
     setSpritePosition({
-      latitude: courses[0].gps[0].latitude,
-      longitude: courses[0].gps[0].longitude,
-    });
-    setSpritePosition({
-      latitude: courses[0].gps[0].latitude,
-      longitude: courses[0].gps[0].longitude,
+      latitude: courses[selected].gps[0].latitude,
+      longitude: courses[selected].gps[0].longitude,
     });
     setStart(false);
     setSpritePositionIndex(0);
+  };
+
+  const handleChangeSelected = (index) => {
+    if (typeof index !== "undefined") {
+      mapRef?.current.animateToRegion(
+        {
+          latitude: courses[index].gps[0].latitude,
+          longitude: courses[index].gps[0].longitude,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.0121,
+        },
+        1500
+      );
+      setSpritePosition({
+        latitude: courses[index].gps[0].latitude,
+        longitude: courses[index].gps[0].longitude,
+      });
+      setSelected(index);
+      setSpritePositionIndex(0);
+    }
   };
 
   useEffect(() => {
@@ -97,19 +114,26 @@ export default function App() {
         handleUpdateCord();
       }, 1500);
 
-      if (spritePositionIndex === courses[0]?.gps.length - 1) {
+      if (spritePositionIndex === courses[selected]?.gps.length - 1) {
         clearInterval(interval);
       }
 
       return () => clearInterval(interval);
     }
-  }, [spritePositionIndex, start]);
+  }, [spritePositionIndex, start, selected]);
+
+  const dataSelected = useMemo(() => {
+    return courses.map((_course, i) => ({
+      label: `rota-${i}`,
+      value: i,
+    }));
+  }, [courses]);
 
   useEffect(() => {
-    const { averageSpeed, estimatedTime } = calculateAverageSpeed();
+    const { averageSpeed, estimatedTime } = calculateAverageSpeed(selected);
     setAverageSpeed(averageSpeed.toFixed(1));
     setEstimatedTime(estimatedTime);
-  }, [courses]);
+  }, [courses, selected]);
 
   return (
     <View style={styles.container}>
@@ -138,6 +162,17 @@ export default function App() {
           </View>
         ) : (
           <View>
+            <RNPickerSelect
+              placeholder={{
+                label: "Selecione uma rota",
+                value: undefined,
+                color: "#9EA0A4",
+              }}
+              onValueChange={(value) => handleChangeSelected(value)}
+              items={dataSelected}
+              value={selected}
+            />
+
             <Text style={styles.overlayText}>
               Tempo Médio:
               {` ${estimatedTime.hours} horas : ${estimatedTime.minutes} minutos`}
@@ -147,7 +182,7 @@ export default function App() {
             </Text>
           </View>
         )}
-        {spritePositionIndex === courses[0]?.gps.length - 1 ? (
+        {spritePositionIndex === courses[selected]?.gps.length - 1 ? (
           <TouchableOpacity style={styles.startButton} onPress={handleReset}>
             <Text style={styles.startButtonText}>Recomeçar</Text>
           </TouchableOpacity>
@@ -209,5 +244,10 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     textAlign: "center",
+  },
+  containerSelected: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
