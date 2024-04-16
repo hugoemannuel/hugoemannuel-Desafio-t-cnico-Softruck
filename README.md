@@ -19,8 +19,8 @@ cujo objetivo seja possibilita o usuário locomover pelo trajeto
 Este projeto Utiliza Expo, para o perfeito funcionamento é necessário ter o aplicativo em seu smartphone.
 Para instalação acesse:
 
-[Expo Android](https://play.google.com/store/apps/details?id=host.exp.exponent&hl=pt_BR&gl=US)
-[Expo IOS](https://apps.apple.com/br/app/expo-go/id982107779)
+#### :link: [Expo Android](https://play.google.com/store/apps/details?id=host.exp.exponent&hl=pt_BR&gl=US)
+#### :link: [Expo IOS](https://apps.apple.com/br/app/expo-go/id982107779)
 
 ## Instalação
 
