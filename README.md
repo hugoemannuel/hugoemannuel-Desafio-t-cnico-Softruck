@@ -1,4 +1,4 @@
-# Desafio  Softruc
+# Desafio  Softruck
 
 ## Sobre o projeto
 
